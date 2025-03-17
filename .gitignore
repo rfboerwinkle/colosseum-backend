@@ -1,0 +1,6 @@
+/creep-disk.img
+/io-template.img
+/tmp/
+/env.cfg
+
+__pycache__/
