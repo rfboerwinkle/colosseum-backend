@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>Colosseum Stands</title>
+ </head>
+
+ <body>
+  <h1>Watch people fight each other</h1>
+  <p>There will be some results here eventually.</p>
+  <script>
+   "use strict";
+
+   function send_request(url, body){
+    let args = {method: "POST", body: body};
+    fetch(url, args)
+     .then((response) => response.json())
+     .then((j) => console.log(j));
+   }
+
+   let cur_state = {};
+   async function long_poll() {
+    while (true) {
+     let b = {};
+     for (let gladiator in cur_state) {
+      b[gladiator] = cur_state[gladiator][0];
+     }
+
+     let args = {method: "POST", body: JSON.stringify(b)};
+     let response = await fetch("statusquery", args);
+     let j = await response.json();
+
+     for (let gladiator in j.content) {
+      cur_state[gladiator] = j.content[gladiator];
+     }
+    }
+   }
+   long_poll();
+  </script>
+ </body>
+</html>
