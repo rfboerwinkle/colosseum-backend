@@ -6,6 +6,19 @@
 
  <body>
   <h1>Hello and welcome to the homepage of the Colosseum!</h1>
-  <p>There will be some links here eventually.</p>
+  <input type="text" name="game" id="game"><br>
+  <input type="text" name="name" id="name">
+  <button onclick="join()">Join</button>
+  <script>
+   "use strict";
+   function join(){
+    let b = {game: document.getElementById("game").value, name: document.getElementById("name").value};
+    let args = {method: "POST", body: JSON.stringify(b)};
+    let response = await fetch("join", args);
+    let token = await response.text();
+    sessionStorage.setItem("token", token);
+    window.location = "stands";
+   }
+  </script>
  </body>
 </html>

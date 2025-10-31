@@ -10,6 +10,8 @@
   <script>
    "use strict";
 
+   console.log(sessionStorage.getItem("token"));
+
    function send_request(url, body){
     let args = {method: "POST", body: body};
     fetch(url, args)
