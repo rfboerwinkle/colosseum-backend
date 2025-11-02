@@ -1,0 +1,6 @@
+[Unit]
+Description=Change in %i
+
+[Service]
+Type=simple
+ExecStart=/home/gladiator/in_changed.sh %i
