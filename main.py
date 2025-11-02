@@ -6,32 +6,46 @@ import random
 import string
 import threading
 
-SERVABLE = {
-  "index.html": "index.html",
-  "arena.html": "arena.html",
-  "stands.html": "stands.html",
-  "404.html": "404.html",
-}
-for file in SERVABLE:
-  with open(os.path.join("www", file), "r") as f:
-    SERVABLE[file] = f.read().encode()
+WWW = "./www"
+WD = "./"
+
+with open("env.cfg", "r") as f:
+    for line in f:
+        key,val = line.strip("\n\r").split("=", 1)
+        if key == "www":
+            WWW = val
+        elif key == "wd":
+            WD = val
+        else:
+            print(f"Unkown config key: {key}")
+
+SERVABLE = {}
+
+for dirpath, dirnames, filenames in os.walk(WWW):
+    for file in filenames:
+        filepath = os.path.join(dirpath, file)
+        with open(filepath, "rb") as f:
+            SERVABLE[tuple(os.path.relpath(filepath, WWW).split(os.sep))] = f.read()
 
 TOKEN_LENGTH = 30
 TOKEN_CHARS = string.ascii_letters + string.digits
 
 job_queue = queue.Queue()
 
+API_CALLS = {
+    ("pages", "index.html"):lambda _cookie,_query_string : SERVABLE[("pages", "index.html")],
+    ("pages", "lobby.html"):lambda _cookie,_query_string : SERVABLE[("pages", "lobby.html")]
+        }
+
 class Game:
   def __init__(self):
     self.lock = threading.Lock()
-    # name: (token, status, score)
-    # name = str
+    # token: (name, status, score)
     # token = str
+    # name = str
     # status = "ready" | "submitted" | "scored"
     # score = int
     self.gladiators = dict()
-    # (current knowledge state, queue)
-    self.subscribers = []
 
   def __contains__(self, key):
     with self.lock:
@@ -45,63 +59,35 @@ class Game:
         new_token = "".join(random.choices(TOKEN_CHARS, k=TOKEN_LENGTH))
         okay = True
         for glad in self.gladiators:
-          if new_token == self.gladiators[glad][0]:
+          if new_token == glad:
             okay = False
             break
 
-      self.gladiators[name] = (new_token, "ready", 0)
+      self.gladiators[new_token] = (name, "ready", 0)
       self._update_all()
-    return f"{{\"type\":\"token\",\"token\":\"{new_token}\"}}".encode()
-
-  # DOES NOT LOCK!
-  def _find_updates(self, cur_state):
-    needs_updates = dict()
-    for glad in self.gladiators:
-      if (glad not in cur_state) \
-         or (cur_state[glad] != self.gladiators[glad][1]):
-        needs_updates[glad] = self.gladiators[glad][1:]
-
-    if len(needs_updates) == 0:
-      return b""
-    else:
-      return json.dumps({"type":"update", "content":needs_updates}).encode()
-
-  def subscribe(self, cur_state, q):
-    with self.lock:
-      needs_updates = self._find_updates(cur_state)
-      if len(needs_updates) != 0:
-        q.put(needs_updates)
-      else:
-        self.subscribers.append((cur_state, q))
-
-  # DOES NOT LOCK!
-  def _update_all(self):
-    new_subscribers = []
-    for subscriber in self.subscribers:
-      up = self._find_updates(subscriber[0])
-      if up:
-        subscriber[1].put(up)
-      else:
-        new_subscribers.append(subscriber)
-    self.subscribers = new_subscribers
+    return new_token
 
 class RequestHandler(server.BaseHTTPRequestHandler):
   def do_GET(self):
-    p = self.path.strip("/")
+    p = tuple(self.path.strip("/").split("/"))
+    payload = "Uh oh! Empty Payload :("
 
     ret = 200
-    if p == "":
-      p = "index.html"
-    elif p not in SERVABLE:
-      p = "404.html"
+    if p in API_CALLS:
+      # TODO: Update passed in value types if need be
+      payload = API_CALLS[p](1,1)
+    elif p in SERVABLE:
+      payload = SERVABLE[p]
+    else:
+      payload = SERVABLE[("pages", "index.html")]
       ret = 404
 
     self.send_response(ret)
     self.send_header("content-type", "text/html")
     self.end_headers()
-    self.wfile.write(SERVABLE[p])
+    self.wfile.write(payload)
     return ret
-
+"""
   def do_POST(self):
     path = self.path.strip("/")
     length = int(self.headers["content-length"])
@@ -133,7 +119,7 @@ class RequestHandler(server.BaseHTTPRequestHandler):
       self.wfile.write(ret)
       print(f"\n\nreturned statusquery\n{ret}")
       return 200
-
+"""
 my_game = Game()
 
 ser = server.ThreadingHTTPServer(("",8008), RequestHandler)
