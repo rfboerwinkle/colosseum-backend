@@ -6,121 +6,139 @@ import random
 import string
 import threading
 
+#import party
+import api
+
 WWW = "./www"
 WD = "./"
+CODE_CHARS = string.ascii_lowercase + string.digits
+CODE_LENGTH = 5
 
 with open("env.cfg", "r") as f:
-    for line in f:
-        key,val = line.strip("\n\r").split("=", 1)
-        if key == "www":
-            WWW = val
-        elif key == "wd":
-            WD = val
-        else:
-            print(f"Unkown config key: {key}")
+  for line in f:
+    key,val = line.strip("\n\r").split("=", 1)
+    if key == "www":
+      WWW = val
+    elif key == "wd":
+      WD = val
+    elif key == "code_chars":
+      CODE_CHARS = val
+    elif key == "code_length":
+      CODE_LENGTH = int(val)
+    else:
+      print(f"Unkown config key: {key}")
 
-SERVABLE = {}
-
-for dirpath, dirnames, filenames in os.walk(WWW):
-    for file in filenames:
-        filepath = os.path.join(dirpath, file)
-        with open(filepath, "rb") as f:
-            SERVABLE[tuple(os.path.relpath(filepath, WWW).split(os.sep))] = f.read()
+api.init(WWW, CODE_CHARS, CODE_LENGTH)
 
 TOKEN_LENGTH = 30
 TOKEN_CHARS = string.ascii_letters + string.digits
 
 job_queue = queue.Queue()
 
-API_CALLS = {
-    ("pages", "index.html"):lambda _cookie,_query_string : SERVABLE[("pages", "index.html")],
-    ("pages", "lobby.html"):lambda _cookie,_query_string : SERVABLE[("pages", "lobby.html")]
-        }
-
-class Game:
-  def __init__(self):
-    self.lock = threading.Lock()
-    # token: (name, status, score)
-    # token = str
-    # name = str
-    # status = "ready" | "submitted" | "scored"
-    # score = int
-    self.gladiators = dict()
-
-  def __contains__(self, key):
-    with self.lock:
-      return key in gladiators
-
-  def add_gladiator(self, name):
-    new_token = ""
-    with self.lock:
-      okay = False
-      while not okay:
-        new_token = "".join(random.choices(TOKEN_CHARS, k=TOKEN_LENGTH))
-        okay = True
-        for glad in self.gladiators:
-          if new_token == glad:
-            okay = False
-            break
-
-      self.gladiators[new_token] = (name, "ready", 0)
-      self._update_all()
-    return new_token
-
 class RequestHandler(server.BaseHTTPRequestHandler):
   def do_GET(self):
-    p = tuple(self.path.strip("/").split("/"))
-    payload = "Uh oh! Empty Payload :("
-
-    ret = 200
-    if p in API_CALLS:
-      # TODO: Update passed in value types if need be
-      payload = API_CALLS[p](1,1)
-    elif p in SERVABLE:
-      payload = SERVABLE[p]
+    split_path = self.path.split("?")
+    if len(split_path) == 1:
+      p = split_path[0]
+      q = ""
+    elif len(split_path) == 2:
+      p,q = split_path
     else:
-      payload = SERVABLE[("pages", "index.html")]
+      return self.send_error(400, "Bad path")
+
+    p = tuple(p.strip("/").split("/"))
+    token = ""
+    if "cookie" in self.headers:
+      token = self.headers["cookie"]
+      print(f"cookie: {token}")
+    else:
+      print("no cookie :(")
+    set_cookie = False
+    if token == "":
+      token = "".join(random.choices(TOKEN_CHARS, k=TOKEN_LENGTH))
+      set_cookie = True
+
+    query_string = []
+    for query in q.split("&"):
+      split_query = query.split("=")
+      if len(split_query) == 1:
+        query_string.append((split_query[0], ""))
+      elif len(split_query) == 2:
+        query_string.append(tuple(split_query))
+      else:
+        return self.send_error(400, "Bad Query string")
+    query_string = tuple(query_string)
+
+    if p == ("",):
+      p = ("pages", "index.html")
+      query_string = tuple()
+
+    if p in api.GET_CALLS:
+      ret,headers,payload = api.GET_CALLS[p](token, query_string)
+    elif p in api.SERVABLE:
+      ret = 200
+      headers = tuple()
+      payload = api.SERVABLE[p]
+    else:
       ret = 404
+      headers = tuple()
+      payload = api.SERVABLE[("pages", "404.html")]
 
     self.send_response(ret)
     self.send_header("content-type", "text/html")
+    if set_cookie:
+      self.send_header("set-cookie", f"{token}; Path=/")
+    for head in headers:
+      self.send_header(head[0], head[1])
     self.end_headers()
     self.wfile.write(payload)
     return ret
-"""
+
   def do_POST(self):
-    path = self.path.strip("/")
-    length = int(self.headers["content-length"])
-    body = self.rfile.read(length)
-    if path == "submit":
-      job_queue.put(body)
-      print(job_queue)
-      # TODO: VM stuff here
-      self.send_response(303)
-      self.send_header("location", "stands.html")
-      self.end_headers()
-      return 303
-    elif path == "join":
-      ret = my_game.add_gladiator(body.decode())
-      self.send_response(200)
-      self.send_header("content-type", "application/json")
-      self.end_headers()
-      self.wfile.write(ret)
-      return 200
-    elif path == "statusquery":
-      print(f"got statusquery\n{body}")
-      q = queue.Queue()
-      cur_state = json.loads(body.decode())
-      my_game.subscribe(cur_state, q)
-      ret = q.get()
-      self.send_response(200)
-      self.send_header("content-type", "application/json")
-      self.end_headers()
-      self.wfile.write(ret)
-      print(f"\n\nreturned statusquery\n{ret}")
-      return 200
-"""
-my_game = Game()
+    # We ignore everything after the question mark.
+    # Don't send query strings in a POST!
+    p = tuple(self.path.strip("/").split("?", 1)[0].split("/"))
+    token = ""
+    if "cookie" in self.headers:
+      token = self.headers["cookie"]
+      print(f"cookie: {token}")
+    else:
+      print("cookieless post :'(")
+      return self.send_error(401, "No cookie / token!")
+
+    try:
+      length = int(self.headers["content-length"])
+      body = self.rfile.read(length)
+    except:
+      return self.send_error(400, "Bad content / missing content-length header...")
+
+    if p in api.POST_CALLS:
+      # TODO: Maybe parse body before doing the post call?
+      ret,headers,payload = api.POST_CALLS[p](token, body)
+    else:
+      ret = 404
+      headers = tuple()
+      payload = api.SERVABLE[("pages", "404.html")]
+
+    self.send_response(ret)
+    self.send_header("content-type", "text/html")
+    for head in headers:
+      self.send_header(head[0], head[1])
+    self.end_headers()
+    self.wfile.write(payload)
+    return ret
+
+  # code = int
+  # body = str
+  # Body will be formatted into html and sent as an error.
+  # Also prints the error.
+  def send_error(code, body):
+    print(f"ERROR {code}: {body}")
+    self.send_response(code)
+    self.send_header("content-type", "text/html")
+    self.end_headers()
+    self.wfile.write(f"<!DOCTYPE html><body><h1>Error: {code}!!</h1><p>{body}</p></body>".encode())
+    return code
 
 ser = server.ThreadingHTTPServer(("",8008), RequestHandler)
 
