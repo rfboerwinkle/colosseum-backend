@@ -4,17 +4,20 @@ PARTIES = dict()
 
 # TODO: token -> party mapping? we loop through parties looking for tokens a lot...
 
+class Gladiator:
+  def __init__(self, name="", status="ready", score=0):
+    self.name = name
+    self.status = status # "ready" | "submitted" | "scored"
+    self.score = score
+
 class Party:
   def __init__(self):
 #    self.lock = threading.Lock()
-    # { token: (name, status, score), ... }
+    # { token: Gladiator, ... }
     # token = str
-    # name = str
-    # status = "ready" | "submitted" | "scored"
-    # score = int
     self.gladiators = dict()
-    # "lobby" | "coding" | "results"
-    self.status = "lobby"
+    # "not coding" | "coding"
+    self.status = "not coding"
     # Host's token, or "" if there is no host.
     # The host is the first person in the lobby.
     # If the host leaves, TODO
@@ -28,6 +31,8 @@ class Party:
   # Adds a gladiator to this party.
   # Assigns a placeholder name until they assign their own.
   def add_gladiator(self, token):
+    if token in self.gladiators:
+      return
     if self.host == "":
       self.host = token
     num = -1
@@ -37,10 +42,11 @@ class Party:
       name = "gladiator_" + str(num)
       okay = True
       for g in self.gladiators:
-        if g[0] == name:
+        if self.gladiators[g].name == name:
           okay = False
           break
-    self.gladiators[token] = (name, "ready", 0)
+    print("glad was added. host is " + self.host)
+    self.gladiators[token] = Gladiator(name, "ready", 0)
 
   # Removes a gladiator by their token.
   # Assigns a random host if the host left (or "" if there are no gladiators).
@@ -52,7 +58,26 @@ class Party:
         glads = tuple(self.gladiators.keys())
         if len(glads) != 0:
           self.host = random.choice(glads)
+      print("glad was deleted. host is: " + self.host)
       return True
     else:
+      print("glad not found. host is: " + self.host)
       return False
 
+  # generates all of the gladiators' names
+  def get_gladiators(self):
+    for token in self.gladiators:
+      yield self.gladiators[token]
+
+  def end(self):
+    self.status = "not coding"
+    for glad in self.gladiators:
+      if self.gladiators[glad].status == "ready":
+        self.gladiators[glad].status = "scored"
+        self.gladiators[glad].score = 0
+
+  def start(self):
+    self.status = "coding"
+    for glad in self.gladiators:
+      self.gladiators[glad].status = "ready"
+      self.gladiators[glad].score = 0

@@ -54,7 +54,10 @@ def lobby(token, query_string):
       party_code = "".join(random.choices(CODE_CHARS, k=CODE_LENGTH))
     party.PARTIES[party_code] = party.Party()
     print(f"Made new party: {party_code}")
+    return (303, (("location", f"/pages/lobby.html?p={party_code}"),), b"")
   for p in party.PARTIES:
+    if p == party_code:
+      continue
     if party.PARTIES[p].del_gladiator(token):
       break
   if party_code in party.PARTIES:
@@ -66,13 +69,117 @@ def lobby(token, query_string):
 # GET
 def poll_start(token, query_string):
   party_code = find_party(token)
-  if party_code != "":
-    if party.PARTIES[party_code].status == "lobby":
-      return (200, tuple(), b"")
-    else:
-      return (200, (("HX-Redirect", "/pages/coding.html"),), b"")
-  else:
+  if party_code == "":
     return format_error(400, "You are not in any lobby!")
+  p = party.PARTIES[party_code]
+  if p.status == "coding" and p.gladiators[token].status == "ready":
+    return (200, (("HX-Redirect", "/pages/coding.html"),), b"")
+  else:
+    return (200, tuple(), b"")
+
+# GET
+# TODO: remove "Player" header? that should be static
+# TODO: indicate host
+def poll_users(token, query_string):
+  party_code = find_party(token)
+  if party_code == "":
+    return format_error(400, "You are not in any lobby!")
+  glads = party.PARTIES[party_code].get_gladiators()
+  out = (
+    b"<ul class=\"space-y-2 text-gray-700\"><li>"
+    + b"</li><li>".join(glad.name.encode("utf-8") for glad in glads)
+    + b"</li></ul>"
+  )
+  return (200, tuple(), out)
+
+# GET
+def lobby_ctrl_panel(token, query_string):
+  party_code = find_party(token)
+  if party_code == "":
+    return format_error(400, "you are not in any lobby!")
+  if party.PARTIES[party_code].host == token:
+    out = (
+      b"<form action=\"/api/start\" method=\"post\">"
+      + b"<input type=\"text\" id=\"my-text\" name=\"my-text\">"
+      + b"<input type=\"submit\" value=\"submit\">"
+      + b"</form>"
+    )
+    return (200, tuple(), out)
+  else:
+    out = (
+      b"<p class=\"text-gray-600\">Waiting for host to start the match...</p>"
+    )
+    return (200, tuple(), out)
+
+# GET
+def coding_ctrl_panel(token, query_string):
+  party_code = find_party(token)
+  if party_code == "":
+    return format_error(400, "you are not in any lobby!")
+  if party.PARTIES[party_code].host == token:
+    out = (
+      b"<a class=\"px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700\" "
+      + b"href=\"/api/end\">"
+      + b"End Match"
+      + b"</a>"
+    )
+    return (200, tuple(), out)
+  else:
+    return (200, tuple(), b"")
+
+# GET
+def poll_end(token, query_string):
+  party_code = find_party(token)
+  if party_code == "":
+    return format_error(400, "you are not in any lobby!")
+  if party.PARTIES[party_code].status == "not coding":
+    # TODO: make redirects consistent
+    return (200, (("HX-Redirect", "/pages/results.html"),), b"")
+  else:
+    return (200, tuple(), b"")
+
+# GET
+def end(token, query_string):
+  party_code = find_party(token)
+  if party_code == "":
+    return format_error(400, "you are not in any lobby!")
+  p = party.PARTIES[party_code]
+  if p.host == token:
+    p.end()
+    return (303, (("location", "/pages/results.html"),), b"")
+  else:
+    return format_error(400, "you are not the host!")
+
+# GET
+def return_to_lobby(token, query_string):
+  party_code = find_party(token)
+  if party_code == "":
+    return format_error(400, "you are not in any lobby!")
+  return (303, (("location", f"/pages/lobby.html?p={party_code}"),), b"")
+
+# GET
+def poll_stats(token, query_string):
+  party_code = find_party(token)
+  if party_code == "":
+    return format_error(400, "You are not in any lobby!")
+  out = b"<div id=\"leaderboard\" class=\"space-y-2\">"
+  for glad in party.PARTIES[party_code].get_gladiators():
+    out += b"<div class=\"flex justify-between text-gray-700\">"
+    out += b"<span>" + glad.name.encode("utf-8") + b"</span>"
+    if glad.status == "ready":
+      out += b"<span>coding...</span>"
+    elif glad.status == "submitted":
+      # TODO: remove this if statement, it's just for testing
+      if random.randint(1,3) == 1:
+        glad.status = "scored"
+        glad.score = random.randint(1,100)
+      out += b"<span>scoring...</span>"
+    elif glad.status == "scored":
+      out += b"<span>" + str(glad.score).encode("utf-8") + b"</span>"
+    out += b"</div>"
+  out += b"</div>"
+  return (200, tuple(), out)
+
 
 # GET_CALLS = { path: function(token, query_string) -> (code, headers, body), ... }
 # path = (str, ...)
@@ -90,9 +197,29 @@ GET_CALLS = {
   # If it is invalid, TODO
   ("pages", "lobby.html"): lobby,
   # Checks to see if the gladiator's game has been started.
-  # Redirects to pages/coding if the game is not in the "lobby" state.
+  # Redirects to pages/coding if the game is not in the "not coding" state.
   # If the gladiator is not in any game, TODO
   ("api", "poll-start"): poll_start,
+  # Returns a table of all the users in the current party.
+  # If the gladiator is not in any party, throw an error.
+  ("api", "poll-users"): poll_users,
+  # Returns settings dialogue if you're the host
+  # Returns nothing otherwise
+  ("api", "lobby-ctrl-panel"): lobby_ctrl_panel,
+  # Returns match setting dialogue if you're the host
+  # Returns nothing otherwise
+  ("api", "coding-ctrl-panel"): coding_ctrl_panel,
+  # TODO: problem
+  # Redircts the user to the results page if the party is in "not coding" state
+  ("api", "poll-end"): poll_end,
+  # Ends the match and redirects the user if you are the host
+  # Returns an error if you are not the host
+  ("api", "end"): end,
+  # Returns the user back to the lobby of the current party
+  ("api", "return-to-lobby"): return_to_lobby,
+  # Returns a table of all the users' stats
+  # If the gladiator is not in any party, throw an error.
+  ("api", "poll-stats"): poll_stats,
 }
 
 # POST
@@ -101,8 +228,8 @@ def start(token, body):
   if party_code != "":
     p = party.PARTIES[party_code]
     if p.host == token:
-      if p.status == "lobby":
-        p.status = "coding"
+      if p.status == "not coding":
+        p.start()
         return (303, (("location", "/pages/coding.html"),), b"")
       else:
         return format_error(400, "The match is in progress.")
@@ -110,6 +237,30 @@ def start(token, body):
       return format_error(403, "You are not the host!")
   else:
     return format_error(400, "You are not in any lobby!")
+
+# POST
+def submit(token, body):
+  print("Got this body:")
+  print(body)
+  party_code = find_party(token)
+  if party_code == "":
+    return format_error(400, "You are not in any lobby!")
+  p = party.PARTIES[party_code]
+  if p.status != "coding":
+    return format_error(400, "Your party is not in a match right now!")
+  if p.gladiators[token].status != "ready":
+    return format_error(400, "You have already submitted!")
+  p.gladiators[token].status = "submitted"
+  # TODO: submit this to the VM
+  move_on = True
+  for glad in p.get_gladiators():
+    if glad.status == "ready":
+      move_on = False
+      break
+  if move_on:
+    p.end()
+    print("Everyone Submitted!")
+  return (303, (("location", "/pages/results.html"),), b"")
 
 # POST_CALLS = { path: function(token, body) -> (code, headers, body), ... }
 # path = (str, ...)
@@ -122,4 +273,9 @@ POST_CALLS = {
   # Starts the gladiator's lobby and redirects to the coding page. TODO: Really redirect?
   # TODO: Setup match with parameters from the body.
   ("api", "start"): start,
+  # set-name
+  # test
+  # Runs code as a final submission, and redirect to results page.
+  # TODO: right now it's just a placeholder. Actually make it do something
+  ("api", "submit"): submit,
 }
