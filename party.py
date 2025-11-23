@@ -1,8 +1,14 @@
 import random
+import database
 
 PARTIES = dict()
 
 # TODO: token -> party mapping? we loop through parties looking for tokens a lot...
+
+DATABASE_PATH = ""
+def init(database_path):
+  global DATABASE_PATH
+  DATABASE_PATH = database_path
 
 class Gladiator:
   def __init__(self, name="", status="ready", score=0):
@@ -22,6 +28,9 @@ class Party:
     # The host is the first person in the lobby.
     # If the host leaves, TODO
     self.host = ""
+    # If we are in the "coding" stage, guaranteed to be non-None
+    # The format is exactly as returned by database.get_random
+    self.problem = None
 
   # Returns True if this Gladiator is in this party (by token).
   def __contains__(self, token):
@@ -76,8 +85,16 @@ class Party:
         self.gladiators[glad].status = "scored"
         self.gladiators[glad].score = 0
 
+  # Starts the round. Returns False on error, True on success.
   def start(self):
     self.status = "coding"
     for glad in self.gladiators:
       self.gladiators[glad].status = "ready"
       self.gladiators[glad].score = 0
+
+    try:
+      self.problem = database.get_random(DATABASE_PATH)
+    except:
+      self.problem = None
+      return False
+    return True

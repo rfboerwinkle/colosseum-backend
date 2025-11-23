@@ -6,13 +6,14 @@ import random
 import string
 import threading
 
-#import party
+import party
 import api
 
 WWW = "./www"
 WD = "./"
 CODE_CHARS = string.ascii_lowercase + string.digits
 CODE_LENGTH = 5
+PROBLEM_DATABASE = "problems.db"
 
 with open("env.cfg", "r") as f:
   for line in f:
@@ -25,10 +26,13 @@ with open("env.cfg", "r") as f:
       CODE_CHARS = val
     elif key == "code_length":
       CODE_LENGTH = int(val)
+    elif key == "problem_database":
+      PROBLEM_DATABASE = val
     else:
-      print(f"Unkown config key: {key}")
+      print(f"Unknown config key: {key}")
 
 api.init(WWW, CODE_CHARS, CODE_LENGTH)
+party.init(PROBLEM_DATABASE)
 
 TOKEN_LENGTH = 30
 TOKEN_CHARS = string.ascii_letters + string.digits

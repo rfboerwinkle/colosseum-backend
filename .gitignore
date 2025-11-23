@@ -2,5 +2,6 @@
 /io-template.img
 /tmp/
 /env.cfg
+/problems.db
 
 __pycache__/

@@ -128,6 +128,17 @@ def coding_ctrl_panel(token, query_string):
     return (200, tuple(), b"")
 
 # GET
+def problem(token, query_string):
+  party_code = find_party(token)
+  if party_code == "":
+    return format_error(400, "you are not in any lobby!")
+  prob = party.PARTIES[party_code].problem
+  if prob == None:
+    return (200, tuple(), b"<h1>No Problem!</h1>")
+  else:
+    return (200, tuple(), prob[0][1].encode("utf-8"))
+
+# GET
 def poll_end(token, query_string):
   party_code = find_party(token)
   if party_code == "":
@@ -209,7 +220,8 @@ GET_CALLS = {
   # Returns match setting dialogue if you're the host
   # Returns nothing otherwise
   ("api", "coding-ctrl-panel"): coding_ctrl_panel,
-  # TODO: problem
+  # Gets the problem description.
+  ("api", "problem"): problem,
   # Redircts the user to the results page if the party is in "not coding" state
   ("api", "poll-end"): poll_end,
   # Ends the match and redirects the user if you are the host
@@ -225,18 +237,19 @@ GET_CALLS = {
 # POST
 def start(token, body):
   party_code = find_party(token)
-  if party_code != "":
-    p = party.PARTIES[party_code]
-    if p.host == token:
-      if p.status == "not coding":
-        p.start()
-        return (303, (("location", "/pages/coding.html"),), b"")
-      else:
-        return format_error(400, "The match is in progress.")
-    else:
-      return format_error(403, "You are not the host!")
-  else:
+  if party_code == "":
     return format_error(400, "You are not in any lobby!")
+  p = party.PARTIES[party_code]
+  if p.host != token:
+    return format_error(403, "You are not the host!")
+  if p.status == "coding":
+    return format_error(400, "The match is in progress.")
+  status = p.start()
+  if not status:
+    return format_error(500, "Could not start match! This is probably because of a database issue...")
+
+  # you made it through all the checks, good job
+  return (303, (("location", "/pages/coding.html"),), b"")
 
 # POST
 def submit(token, body):
