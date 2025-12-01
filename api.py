@@ -100,8 +100,9 @@ def lobby_ctrl_panel(token, query_string):
   if party.PARTIES[party_code].host == token:
     out = (
       b"<form action=\"/api/start\" method=\"post\">"
-      + b"<input type=\"text\" id=\"my-text\" name=\"my-text\">"
-      + b"<input type=\"submit\" value=\"submit\">"
+      + b"<input hidden type=\"text\" id=\"my-text\" name=\"my-text\">"
+      + b"<input type=\"submit\" value=\"Start\" "
+      + b"     class=\"px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer\">"
       + b"</form>"
     )
     return (200, tuple(), out)
@@ -178,15 +179,25 @@ def poll_stats(token, query_string):
     out += b"<div class=\"flex justify-between text-gray-700\">"
     out += b"<span>" + glad.name.encode("utf-8") + b"</span>"
     if glad.status == "ready":
-      out += b"<span>coding...</span>"
+      out += (
+        b"<span class=\"inline-flex items-center gap-2\">"
+        + b"  coding..."
+        + b"  <span class=\"inline-block h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin align-middle\"></span>"
+        + b"</span>"
+      )
     elif glad.status == "submitted":
       # TODO: remove this if statement, it's just for testing
       if random.randint(1,3) == 1:
         glad.status = "scored"
         glad.score = random.randint(1,100)
-      out += b"<span>scoring...</span>"
+      out += (
+        b"<span class=\"inline-flex items-center gap-2\">"
+        + b"  scoring..."
+        + b"  <span class=\"inline-block h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin align-middle\"></span>"
+        + b"</span>"
+      )
     elif glad.status == "scored":
-      out += b"<span>" + str(glad.score).encode("utf-8") + b"</span>"
+      out += b"<span class=\"inline-flex items-center\">" + str(glad.score).encode("utf-8") + b"</span>"
     out += b"</div>"
   out += b"</div>"
   return (200, tuple(), out)
