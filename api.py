@@ -174,33 +174,49 @@ def poll_stats(token, query_string):
   party_code = find_party(token)
   if party_code == "":
     return format_error(400, "You are not in any lobby!")
-  out = b"<div id=\"leaderboard\" class=\"space-y-2\">"
+
+  should_poll = False
   for glad in party.PARTIES[party_code].get_gladiators():
-    out += b"<div class=\"flex justify-between text-gray-700\">"
-    out += b"<span>" + glad.name.encode("utf-8") + b"</span>"
+    if glad.status != "scored":
+      should_poll = True
+      break
+
+  if should_poll:
+    polling_attributes = 'hx-get="/api/poll-stats" hx-trigger="every 1s" hx-target="#leaderboard" hx-swap="outerHTML"'
+  else:
+    polling_attributes = ""
+
+  out = f"""
+  <div id="leaderboard" class="bg-white rounded-xl shadow p-6" {polling_attributes}>
+    <h2 class="text-lg font-semibold mb-4">Leaderboard</h2>
+    <div class="space-y-2">
+  """
+
+  spinner_element = '<span class=\"inline-block h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin align-middle\" />'
+
+  for glad in party.PARTIES[party_code].get_gladiators():
+    out += f"""
+    <div class="flex justify-between text-gray-700">
+      <span>{glad.name}</span>
+    """
     if glad.status == "ready":
-      out += (
-        b"<span class=\"inline-flex items-center gap-2\">"
-        + b"  coding..."
-        + b"  <span class=\"inline-block h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin align-middle\"></span>"
-        + b"</span>"
-      )
+      out += f'<span class="inline-flex items-center gap-2">coding...{spinner_element}</span>'
     elif glad.status == "submitted":
       # TODO: remove this if statement, it's just for testing
       if random.randint(1,3) == 1:
         glad.status = "scored"
-        glad.score = random.randint(1,100)
-      out += (
-        b"<span class=\"inline-flex items-center gap-2\">"
-        + b"  scoring..."
-        + b"  <span class=\"inline-block h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin align-middle\"></span>"
-        + b"</span>"
-      )
+        glad.score = random.random()
+      out += f'<span class="inline-flex items-center gap-2">scoring...{spinner_element}</span>'
     elif glad.status == "scored":
-      out += b"<span class=\"inline-flex items-center\">" + str(glad.score).encode("utf-8") + b"</span>"
-    out += b"</div>"
-  out += b"</div>"
-  return (200, tuple(), out)
+      out += f'<span class="inline-flex items-center">{round(glad.score * 100)}</span>'
+    out += "</div>"
+
+  out += """
+    </div>
+  </div>
+  """
+
+  return (200, tuple(), out.encode())
 
 
 # GET_CALLS = { path: function(token, query_string) -> (code, headers, body), ... }
