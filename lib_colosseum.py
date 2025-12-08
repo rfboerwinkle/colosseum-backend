@@ -8,6 +8,10 @@ with open("env.cfg", "r") as f:
     key,val = line.strip("\n\r").split("=", 1)
     if key == "wd":
       WD = val
+    elif key == "pool-size":
+      POOL_SIZE = int(val)
+    elif key == "www":
+      pass
     else:
       print(f"Unknown config key: {key}")
 
@@ -16,11 +20,20 @@ TMP_DIR = os.path.join(WD, "tmp")
 MAIN_DISK = os.path.join(WD, "creep-disk.img")
 VM_SETUP_DIR = os.path.join(WD, "vm_setup")
 
+def get_out_dir(suffix):
+  return os.path.join(TMP_DIR, f"out-{suffix}-dir")
+def get_out_file(suffix):
+  return os.path.join(TMP_DIR, f"out-{suffix}.img")
+def get_in_dir(suffix):
+  return os.path.join(TMP_DIR, f"in-{suffix}-dir")
+def get_in_file(suffix):
+  return os.path.join(TMP_DIR, f"in-{suffix}.img")
+
 def clean_tmp(suffix):
-  in_dir = os.path.join(TMP_DIR, f"in-{suffix}-dir")
-  out_dir = os.path.join(TMP_DIR, f"out-{suffix}-dir")
-  in_file = os.path.join(TMP_DIR, f"in-{suffix}.img")
-  out_file = os.path.join(TMP_DIR, f"out-{suffix}.img")
+  in_dir = get_in_dir(suffix)
+  out_dir = get_out_dir(suffix)
+  in_file = get_in_file(suffix)
+  out_file = get_out_file(suffix)
 
   # TODO: maybe make not a subprocess call?
   subprocess.run(["umount", "-f", in_dir])
@@ -35,40 +48,41 @@ def clean_tmp(suffix):
   except FileNotFoundError:
     pass
   try:
-    os.remove(os.path.join(TMP_DIR, f"in-{suffix}.img"))
+    os.remove(in_file)
   except FileNotFoundError:
     pass
   try:
-    os.remove(os.path.join(TMP_DIR, f"out-{suffix}.img"))
+    os.remove(out_file)
   except FileNotFoundError:
     pass
 
 def make_output(suffix):
-  out_dir = os.path.join(TMP_DIR, f"out-{suffix}-dir")
-  out_file = os.path.join(TMP_DIR, f"out-{suffix}.img")
-  shutil.copyfile(IO_TEMPLATE, out_file)
-  os.mkdir(out_dir)
-  return (out_dir, out_file)
-
+  shutil.copyfile(IO_TEMPLATE, get_out_file(suffix))
+  os.mkdir(get_out_dir(suffix))
 def make_input(suffix):
-  in_dir = os.path.join(TMP_DIR, f"in-{suffix}-dir")
-  in_file = os.path.join(TMP_DIR, f"in-{suffix}.img")
-  shutil.copyfile(IO_TEMPLATE, in_file)
-  os.mkdir(in_dir)
-  return(in_dir, in_file)
+  shutil.copyfile(IO_TEMPLATE, get_in_file(suffix))
+  os.mkdir(get_in_dir(suffix))
 
+def mount_output(suffix):
+  out_dir = get_out_dir(suffix)
+  out_file = get_out_file(suffix)
+  # TODO: maybe make not a subprocess call?
+  subprocess.run(["mount", "-o", "loop", out_file, out_dir])
 def mount_input(suffix):
-  in_dir = os.path.join(TMP_DIR, f"in-{suffix}-dir")
-  in_file = os.path.join(TMP_DIR, f"in-{suffix}.img")
+  in_dir = get_in_dir(suffix)
+  in_file = get_in_file(suffix)
   # TODO: maybe make not a subprocess call?
   subprocess.run(["mount", "-o", "loop", in_file, in_dir])
 
+def umount_output(suffix):
+  out_dir = get_out_dir(suffix)
+  subprocess.run(["umount", "-f", out_dir])
 def umount_input(suffix):
-  in_dir = os.path.join(TMP_DIR, f"in-{suffix}-dir")
+  in_dir = get_in_dir(suffix)
   subprocess.run(["umount", "-f", in_dir])
 
 def xml_input(suffix):
-  in_file = os.path.join(TMP_DIR, f"in-{suffix}.img")
+  in_file = get_in_file(suffix)
   return f"""
 <disk type="file" device="cdrom">
   <source file="{in_file}"/>
@@ -76,4 +90,3 @@ def xml_input(suffix):
   <serial>colosseum-in</serial>
 </disk>
 """
-

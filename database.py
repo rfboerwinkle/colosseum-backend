@@ -38,8 +38,8 @@ def init_db(filename):
 # name: str
 # description: str, formatted as an html snippet
 # difficulty: int
-# input: str
-# output: str
+# input: bytes
+# output: bytes
 # hidden: bool
 def get_random(filename):
     conn = sqlite3.connect(f"file:{filename}?mode=ro", uri=True)
@@ -56,6 +56,7 @@ def get_random(filename):
     res = cur.execute("SELECT input, output, hidden FROM test_cases WHERE id=?", (problem_id,))
     test_cases = res.fetchall()
     conn.close()
+    test_cases = [(i.encode(), o.encode(), h) for i,o,h in test_cases]
     return (problem_desc, test_cases)
 
 def import_problems(filename, base_dir):

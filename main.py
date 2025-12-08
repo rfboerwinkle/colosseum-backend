@@ -11,6 +11,7 @@ import api
 
 WWW = "./www"
 WD = "./"
+# CANNOT INCLUDE "-", SEE api.poll_result_pipe
 CODE_CHARS = string.ascii_lowercase + string.digits
 CODE_LENGTH = 5
 PROBLEM_DATABASE = "problems.db"
@@ -28,14 +29,17 @@ with open("env.cfg", "r") as f:
       CODE_LENGTH = int(val)
     elif key == "problem_database":
       PROBLEM_DATABASE = val
+    elif key == "pool-size":
+      pass
     else:
       print(f"Unknown config key: {key}")
 
 api.init(WWW, CODE_CHARS, CODE_LENGTH)
 party.init(PROBLEM_DATABASE)
 
-TOKEN_LENGTH = 30
+# CANNOT INCLUDE "-", SEE api.poll_result_pipe
 TOKEN_CHARS = string.ascii_letters + string.digits
+TOKEN_LENGTH = 30
 
 job_queue = queue.Queue()
 
@@ -118,7 +122,7 @@ class RequestHandler(server.BaseHTTPRequestHandler):
 
     if p in api.POST_CALLS:
       # TODO: Maybe parse body before doing the post call?
-      ret,headers,payload = api.POST_CALLS[p](token, body)
+      ret,headers,payload = api.POST_CALLS[p](token, body.decode())
     else:
       ret = 404
       headers = tuple()

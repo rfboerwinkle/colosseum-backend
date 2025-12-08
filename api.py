@@ -1,15 +1,25 @@
 import os
 import random
+import threading
+import time
+import urllib
 
 import party
 
 SERVABLE = {}
 CODE_CHARS = ""
 CODE_LENGTH = 0
+TEST_PIPE = None
+TEST_MUTEX = None
+RESULT_PIPE = None
+RESULT_MUTEX = None
+LAST_RESULT_POLL = 0
+RESULT_BUFFER = []
+RESULT_BYTE_BUFFER = b""
 
 # This must be called before anything else in this file!!
 def init(path, code_chars, code_length):
-  global SERVABLE, CODE_CHARS, CODE_LENGTH
+  global SERVABLE, CODE_CHARS, CODE_LENGTH, RESULT_PIPE, RESULT_MUTEX, TEST_PIPE, TEST_MUTEX
   CODE_CHARS = code_chars
   CODE_LENGTH = code_length
   for dirpath, dirnames, filenames in os.walk(path):
@@ -17,6 +27,10 @@ def init(path, code_chars, code_length):
       filepath = os.path.join(dirpath, file)
       with open(filepath, "rb") as f:
         SERVABLE[tuple(os.path.relpath(filepath, path).split(os.sep))] = f.read()
+  RESULT_PIPE = os.open("result-pipe", os.O_RDONLY | os.O_NONBLOCK)
+  RESULT_MUTEX = threading.Lock()
+  TEST_PIPE = os.open("test-pipe", os.O_WRONLY)
+  TEST_MUTEX = threading.Lock()
 
 # helper function TODO: remove and replace with a data structure?
 # Returns party code of a given gladiator's token.
@@ -38,6 +52,36 @@ def format_error(code, body):
   # don't need it here because it gets added on later in the do_GET / do_POST
   # process.
   return (code, tuple(), f"<!DOCTYPE html><body><h1>Error: {code}!!</h1><p>{body}</p></body>".encode())
+
+# Polls the result pipe for information. I'm not entirely sure when it should be
+# called. for right now, it is called at every poll_stats.
+def poll_result_pipe():
+  global LAST_RESULT_POLL, RESULT_BYTE_BUFFER, RESULT_BUFFER, RESULT_MUTEX
+  with RESULT_MUTEX:
+    cur_time = time.monotonic()
+    if cur_time - LAST_RESULT_POLL > 1:
+      LAST_RESULT_POLL = cur_time
+      try:
+        while True:
+          # only read 10 bytes for testing purposes only, make it bigger eventually
+          data = os.read(RESULT_PIPE, 10)
+          oldi = 0
+          for i,b in enumerate(data):
+            if b == 0:
+              RESULT_BYTE_BUFFER += data[oldi:i+1]
+              oldi = i+1
+              RESULT_BUFFER.append(RESULT_BYTE_BUFFER[:-1])
+              if len(RESULT_BUFFER) == 3:
+                code,token_n_test_case = RESULT_BUFFER[2].split(b"-", 1)
+                code = code.decode()
+                party.PARTIES[code].grade(RESULT_BUFFER[0], RESULT_BUFFER[1], token_n_test_case)
+                RESULT_BUFFER = []
+              RESULT_BYTE_BUFFER = b""
+          if oldi != len(data):
+            RESULT_BYTE_BUFFER += data[oldi:]
+      except BlockingIOError:
+        # test_pipe is non-blocking, so it will error if there is nothing to read.
+        pass
 
 # TODO: timeout lobbies
 # GET
@@ -171,6 +215,7 @@ def return_to_lobby(token, query_string):
 
 # GET
 def poll_stats(token, query_string):
+  poll_result_pipe()
   party_code = find_party(token)
   if party_code == "":
     return format_error(400, "You are not in any lobby!")
@@ -186,10 +231,6 @@ def poll_stats(token, query_string):
         + b"</span>"
       )
     elif glad.status == "submitted":
-      # TODO: remove this if statement, it's just for testing
-      if random.randint(1,3) == 1:
-        glad.status = "scored"
-        glad.score = random.randint(1,100)
       out += (
         b"<span class=\"inline-flex items-center gap-2\">"
         + b"  scoring..."
@@ -264,6 +305,7 @@ def start(token, body):
 
 # POST
 def submit(token, body):
+  global TEST_MUTEX, TEST_PIPE
   print("Got this body:")
   print(body)
   party_code = find_party(token)
@@ -274,8 +316,10 @@ def submit(token, body):
     return format_error(400, "Your party is not in a match right now!")
   if p.gladiators[token].status != "ready":
     return format_error(400, "You have already submitted!")
-  p.gladiators[token].status = "submitted"
-  # TODO: submit this to the VM
+  good_body = urllib.parse.unquote_plus(body.split("=", 1)[1]).encode().replace(b"\x00", b"")
+  submit_string = p.submit(party_code.encode(), token, good_body)
+  with TEST_MUTEX:
+    os.write(TEST_PIPE, submit_string)
   move_on = True
   for glad in p.get_gladiators():
     if glad.status == "ready":
