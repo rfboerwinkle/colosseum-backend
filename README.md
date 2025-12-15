@@ -43,6 +43,8 @@ Run these two commands in seperate terminals:
 
 - `xml_gen.py`: Makes XML descriptions of domains. Used by several scripts.
 
+- `state_diagram.png`: Description of states / transitions of each individual client. This describes all possible HTTP requests which can be made to the server.
+
 ## Generated Files
 
 - `creep_disk.img`: The virtual hard drive that all the VMs use.
