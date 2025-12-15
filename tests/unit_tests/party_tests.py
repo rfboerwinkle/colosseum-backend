@@ -143,11 +143,6 @@ def test_end():
         assert test_party.gladiators[g].status == "scored"
 
 
-# START
-# TODO: I couldn't do any testing because I need a working database
-#  (and have no problems on hand to add to said database)
-
-
 # SUBMIT
 # TODO: possibly more error-catching tests since errors from submit could propagate into much worse
 #  compared to the others erroring imo
@@ -214,6 +209,8 @@ def test_grade_correct_calculated_score(capsys):
     assert "(it failed)" in captured_output.out
     assert test_party.gladiators["token1"].score == 0.5
 
+
+# START
 def test_invalid_database_start_errors():
   party.init("bad_path")
   test_party = party.Party()
