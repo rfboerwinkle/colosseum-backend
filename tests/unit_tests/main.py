@@ -1,3 +1,4 @@
+import pytest
 import party
 # currently using 8.4.2 of pytest which isn't the latest?? Can't find/install 9.0.2
 
@@ -12,35 +13,23 @@ import party
 #     assert test_party.problem == None
 
 def test_party_invalid_params_passed():
-    try:
-        test_party = party.Party(1)
-        assert False
-    except TypeError:
-        assert True
+  with pytest.raises(TypeError):
+    _test_party = party.Party(1)
 
 # __CONTAINS__
 def test_contains_valid():
     test_party = party.Party()
     token = "first_token"
     test_party.add_gladiator(token)
-    if token in test_party:
-        assert True
-    else:
-        assert False
+    assert token in test_party
 
 def test_contains_invalid():
     test_party = party.Party()
-    if "not_a_valid_token" in test_party:
-        assert False
-    else:
-        assert True
+    assert "not_a_valid_token" not in test_party
 
 def test_contains_invalid_type():
     test_party = party.Party()
-    if 123 in test_party:
-        assert False
-    else:
-        assert True
+    assert 123 not in test_party
 
 # TODO: empty strings should probably not be considered a valid token...
 # def test_contains_invalid_empty_string():
@@ -55,19 +44,13 @@ def test_contains_invalid_type():
 def test_add_gladiator_valid():
     test_party = party.Party()
     test_party.add_gladiator("test_token")
-    if "test_token" in test_party.gladiators:
-        assert True
-    else:
-        assert False
+    assert "test_token" in test_party.gladiators
 
 # not entirely sure how unexpected types passed in *should* be handled
 def test_add_gladiator_unexpected_type():
     test_party = party.Party()
-    try:
+    with pytest.raises(TypeError):
         test_party.add_gladiator(123)
-        assert False
-    except TypeError:
-        assert True
 
 def test_add_gladiator_first_glad_is_host():
     test_party = party.Party()

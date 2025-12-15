@@ -7,6 +7,7 @@ host_session = requests.session()
 user_session = requests.session()
 user_invalid_session = requests.session()
 SERVER_ADDRESS = "http://192.168.0.2:8008"
+# SERVER_ADDRESS = "http://localhost:8008"
 
 
 @scenario("join_lobby.feature", "A user wants to create a party")
