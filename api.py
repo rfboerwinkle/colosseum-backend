@@ -27,9 +27,9 @@ def init(path, code_chars, code_length):
       filepath = os.path.join(dirpath, file)
       with open(filepath, "rb") as f:
         SERVABLE[tuple(os.path.relpath(filepath, path).split(os.sep))] = f.read()
-  RESULT_PIPE = os.open("result-pipe", os.O_RDONLY | os.O_NONBLOCK)
+  RESULT_PIPE = os.open("result_pipe", os.O_RDONLY | os.O_NONBLOCK)
   RESULT_MUTEX = threading.Lock()
-  TEST_PIPE = os.open("test-pipe", os.O_WRONLY)
+  TEST_PIPE = os.open("test_pipe", os.O_WRONLY)
   TEST_MUTEX = threading.Lock()
 
 # helper function TODO: remove and replace with a data structure?

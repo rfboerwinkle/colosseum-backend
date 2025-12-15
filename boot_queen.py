@@ -1,7 +1,5 @@
 #!/bin/python3
 
-print("UNTESTED!!!")
-
 import os
 import shutil
 import sys
@@ -14,8 +12,9 @@ import xml_gen
 SUFFIX = "queen"
 
 lib.clean_tmp(SUFFIX)
-out_dir,out_file = lib.make_output(SUFFIX)
-in_dir,in_file = lib.make_input(SUFFIX)
+lib.make_output(SUFFIX)
+out_file = lib.get_out_file(SUFFIX)
+lib.make_input(SUFFIX)
 dom_xml = xml_gen.broodling(lib.MAIN_DISK, out_file)
 
 conn = libvirt.open()
@@ -36,15 +35,7 @@ try:
   print("Press enter to mount the input drive.")
 
   input()
-  f = open(INPUT_FILE, "r")
-  code = f.read()
-  f.close()
   input_xml = lib.xml_input(SUFFIX)
-  lib.mount_input(SUFFIX)
-  f = open(os.path.join(in_dir, "main.py"), "w+")
-  f.write(code)
-  f.close()
-  lib.umount_input(SUFFIX)
   domain.updateDeviceFlags(input_xml, libvirt.VIR_DOMAIN_AFFECT_LIVE)
 
   print()

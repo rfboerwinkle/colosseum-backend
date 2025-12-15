@@ -104,8 +104,8 @@ class Broodling:
 
 conn = libvirt.open()
 broodlings = []
-test_pipe = os.open("test-pipe", os.O_RDONLY | os.O_NONBLOCK)
-result_pipe = os.open("result-pipe", os.O_WRONLY)
+test_pipe = os.open("test_pipe", os.O_RDONLY | os.O_NONBLOCK)
+result_pipe = os.open("result_pipe", os.O_WRONLY)
 
 try:
   for i in range(lib.POOL_SIZE):

@@ -1,7 +1,5 @@
 #!/bin/python3
 
-print("UNTESTED")
-
 import os
 import shutil
 import sys
@@ -15,11 +13,13 @@ if len(sys.argv) != 2:
   print("Usage: boot_installer.py INSTALL_IMAGE")
   exit()
 
-_,INSTALL_IMAGE = sys.argv
+INSTALL_IMAGE = sys.argv[1]
 SUFFIX = "installer"
 
 lib.clean_tmp(SUFFIX)
-out_dir,out_file = lib.make_output(SUFFIX)
+out_dir = lib.get_out_dir(SUFFIX)
+out_file = lib.get_out_file(SUFFIX)
+lib.make_output(SUFFIX)
 lib.mount_output(SUFFIX)
 shutil.copytree(lib.VM_SETUP_DIR, out_dir)
 lib.umount_output(SUFFIX)

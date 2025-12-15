@@ -16,8 +16,10 @@ if len(sys.argv) != 3:
 _,INPUT_FILE,SUFFIX = sys.argv
 
 lib.clean_tmp(SUFFIX)
-out_dir,out_file = lib.make_output(SUFFIX)
-in_dir,in_file = lib.make_input(SUFFIX)
+lib.make_output(SUFFIX)
+out_file = lib.get_out_file(SUFFIX)
+in_dir = lib.get_in_dir(SUFFIX)
+lib.make_input(SUFFIX)
 dom_xml = xml_gen.broodling(lib.MAIN_DISK, out_file, SUFFIX)
 
 conn = libvirt.open()
@@ -35,7 +37,7 @@ try:
 
   print()
   print("Instance is ready.")
-  print("Press enter to mount the input drive.")
+  print("Press enter to populate and mount the input drive.")
 
   input()
   f = open(INPUT_FILE, "r")

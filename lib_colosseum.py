@@ -15,9 +15,9 @@ with open("env.cfg", "r") as f:
     else:
       print(f"Unknown config key: {key}")
 
-IO_TEMPLATE = os.path.join(WD, "io-template.img")
+IO_TEMPLATE = os.path.join(WD, "io_template.img")
 TMP_DIR = os.path.join(WD, "tmp")
-MAIN_DISK = os.path.join(WD, "creep-disk.img")
+MAIN_DISK = os.path.join(WD, "creep_disk.img")
 VM_SETUP_DIR = os.path.join(WD, "vm_setup")
 
 def get_out_dir(suffix):

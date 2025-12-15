@@ -1,13 +1,13 @@
 # Overview
 
-You need a disk image (`$ ./make-creep-disk.sh`)
+You need a disk image (`$ truncate --size=2147483648 creep_disk.img`)
 
 This disk will be used by all domains.
 
 `python3 boot_[DOMAIN].py` to start a domain.
 
 `boot_installer.py INSTALL_IMAGE` is for installing. Boot order is
-`creep-disk.img` and then the install image you select. You can always
+`creep_disk.img` and then the install image you select. You can always
 `'c' for a command-line`, and then `grub> exit` to fall back to the installer
 (you should basically never have to wipe the disk image).
 
@@ -30,7 +30,7 @@ Install `virt-manager` (I have v4.1.0).
 
 create a raw img file to serve as the virtual hard drive:
 
-`$ ./make-creep-disk.sh`
+`$ truncate --size=2147483648 creep_disk.img`
 
 Download a DVD install image (offline). I have the Debian 12.9.0 DVD.
 
