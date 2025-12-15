@@ -1,4 +1,5 @@
 #!/bin/bash
-python3 -m venv tests/.venv
-source tests/.venv/bin/activate
+# Run this first to set up venv
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r tests/requirements.txt
