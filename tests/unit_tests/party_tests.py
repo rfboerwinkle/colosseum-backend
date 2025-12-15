@@ -1,16 +1,17 @@
 import pytest
 import party
+import tests.unit_tests.test_db_manager as test_db_manager
 # currently using 8.4.2 of pytest which isn't the latest?? Can't find/install 9.0.2
 
 # PARTY INITALIZATION
 
 # Is this something to test for? kinda not sure
-# def test_party_inital_params():
-#     test_party = party.Party()
-#     assert len(test_party.gladiators) == 0
-#     assert test_party.status == "not coding"
-#     assert test_party.host == ""
-#     assert test_party.problem == None
+def test_party_inital_params():
+    test_party = party.Party()
+    assert len(test_party.gladiators) == 0
+    assert test_party.status == "not coding"
+    assert test_party.host == ""
+    assert test_party.problem == None
 
 
 def test_party_invalid_params_passed():
@@ -40,10 +41,7 @@ def test_contains_invalid_type():
 # def test_contains_invalid_empty_string():
 #     test_party = party.Party()
 #     test_party.add_gladiator("")
-#     if "" in test_party:
-#         assert False
-#     else:
-#         assert True
+#     assert "" not in test_party
 
 
 # ADD_GLADIATOR
@@ -215,3 +213,19 @@ def test_grade_correct_calculated_score(capsys):
     captured_output = capsys.readouterr()
     assert "(it failed)" in captured_output.out
     assert test_party.gladiators["token1"].score == 0.5
+
+def test_invalid_database_start_errors():
+  party.init("bad_path")
+  test_party = party.Party()
+  assert not test_party.start()
+  assert test_party.problem is None
+
+def test_start_problem_works_with_database():
+  test_db_manager.setup_db()
+  party.init(test_db_manager.DB_PATH)
+  test_party = party.Party()
+  test_party.add_gladiator("token1")
+  assert test_party.start()
+  assert test_party.status == "coding"
+  assert test_party.problem is not None
+  test_db_manager.remove_db()
