@@ -1,6 +1,6 @@
 # Overview
 
-You need a disk image (`$ ./install-creep.sh`)
+You need a disk image (`$ ./make-creep-disk.sh`)
 
 This disk will be used by all domains.
 
@@ -17,7 +17,7 @@ access to the disk.
 `boot_broodling.py` is what will be spawned for each submission. It has no
 write access to the disk.
 
-The versions of software in this file probably aren't necissary, but I included
+The versions of software in this file probably aren't necessary, but I included
 them in case you were curious.
 
 # install host machine
@@ -30,7 +30,7 @@ Install `virt-manager` (I have v4.1.0).
 
 create a raw img file to serve as the virtual hard drive:
 
-`$ ./install-creep.sh`
+`$ ./make-creep-disk.sh`
 
 Download a DVD install image (offline). I have the Debian 12.9.0 DVD.
 
