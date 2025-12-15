@@ -290,7 +290,7 @@ GET_CALLS = {
   ("api", "coding-ctrl-panel"): coding_ctrl_panel,
   # Gets the problem description.
   ("api", "problem"): problem,
-  # Redircts the user to the results page if the party is in "not coding" state
+  # Redirects the user to the results page if the party is in "not coding" state
   ("api", "poll-end"): poll_end,
   # Ends the match and redirects the user if you are the host
   # Returns an error if you are not the host
