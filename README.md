@@ -14,6 +14,16 @@ There are 3 main parts: the main application (`main.py`), the VMs which run the 
 
 2. Go through `VM_setup.md`
 
+3. Clone the frontend
+
+4. Add the following line to the `env.cfg` file:
+
+  `www=PATH_TO_FRONTEND`
+
+5. Make the problem database:
+
+  `./make_database.py problems.db example_problems`
+
 ## Running
 
 Run these two commands in seperate terminals:

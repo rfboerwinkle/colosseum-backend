@@ -92,6 +92,11 @@ def lobby(token, query_string):
   for key,value in query_string:
     if key == "p":
       party_code = value
+  for p in party.PARTIES:
+    if p == party_code:
+      continue
+    if party.PARTIES[p].del_gladiator(token):
+      break
   if party_code == "":
     party_code = "".join(random.choices(CODE_CHARS, k=CODE_LENGTH))
     while party_code in party.PARTIES:
@@ -101,11 +106,6 @@ def lobby(token, query_string):
     party.PARTIES[party_code] = party.Party()
     print(f"Made new party: {party_code}")
     return (303, (("location", f"/pages/lobby.html?p={party_code}"),), b"")
-  for p in party.PARTIES:
-    if p == party_code:
-      continue
-    if party.PARTIES[p].del_gladiator(token):
-      break
   if party_code in party.PARTIES:
     party.PARTIES[party_code].add_gladiator(token)
     return (200, tuple(), SERVABLE[("pages", "lobby.html")])

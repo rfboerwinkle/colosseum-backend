@@ -1,9 +1,6 @@
 import os
 import sqlite3
 
-DB_PATH = "problems.db"
-PROBLEMS_DIR = "problems"
-
 if sqlite3.threadsafety == 0:
     print("No thread safety!! This will probably cause issues.")
 
