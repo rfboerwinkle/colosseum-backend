@@ -106,24 +106,24 @@ def test_lobby_valid_code():
     assert api.lobby(token, query_string) == (200, tuple(), ("pages", "index.html"))
 
 
-# def test_lobby_glad_switch():
-#     party.PARTIES = dict()
-#     api.CODE_CHARS = "abc"
-#     api.CODE_LENGTH = 5
-#     test_party = party.Party()
-#     party.PARTIES["test_party_code"] = test_party
-#     test_party.add_gladiator("test_token")
-#
-#     token = "test_token"
-#     query_string = []
-#
-#     assert api.lobby(token, query_string)[0] == 303
-#     # print(api.lobby(token, query_string))
-#     for p in party.PARTIES:
-#         print(party.PARTIES[p].gladiators)
-#     print("parties at: " + str(party.PARTIES))
-#     assert api.find_party("test_token") != "test_party_code"
-#     assert api.find_party("test_token") != ""
+def test_lobby_glad_switch():
+    party.PARTIES = dict()
+    api.CODE_CHARS = "abc"
+    api.CODE_LENGTH = 5
+    test_party = party.Party()
+    party.PARTIES["test_party_code"] = test_party
+    test_party.add_gladiator("test_token")
+
+    token = "test_token"
+    query_string = []
+
+    assert api.lobby(token, query_string)[0] == 303
+    # print(api.lobby(token, query_string))
+    for p in party.PARTIES:
+        print(party.PARTIES[p].gladiators)
+    print("parties at: " + str(party.PARTIES))
+    assert api.find_party("test_token") != "test_party_code"
+    assert api.find_party("test_token") != ""
 
 
 def test_lobby_creation():
