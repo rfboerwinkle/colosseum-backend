@@ -116,7 +116,12 @@ def test_lobby_glad_switch():
     token = "test_token"
     query_string = []
 
-    assert api.lobby(token, query_string)[0] == 303
+    ret = api.lobby(token, query_string)
+    assert ret[0] == 303
+    query = ret[1][0][1].split("?")[1]
+    query = query.split("=")
+    ret = api.lobby(token, [query])
+    assert ret[0] == 200
     # print(api.lobby(token, query_string))
     for p in party.PARTIES:
         print(party.PARTIES[p].gladiators)
