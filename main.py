@@ -1,3 +1,5 @@
+#!/bin/python3
+
 from http import server
 import json
 import os
@@ -10,7 +12,6 @@ import party
 import api
 
 WWW = "./www"
-WD = "./"
 # CANNOT INCLUDE "-", SEE api.poll_result_pipe
 CODE_CHARS = string.ascii_lowercase + string.digits
 CODE_LENGTH = 5
@@ -21,15 +22,14 @@ with open("env.cfg", "r") as f:
     key,val = line.strip("\n\r").split("=", 1)
     if key == "www":
       WWW = val
-    elif key == "wd":
-      WD = val
     elif key == "code_chars":
       CODE_CHARS = val
     elif key == "code_length":
       CODE_LENGTH = int(val)
     elif key == "problem_database":
       PROBLEM_DATABASE = val
-    elif key == "pool-size":
+    elif key in ("wd", "storage_dir", "pool_size"):
+      # These are in lib_colosseum.py
       pass
     else:
       print(f"Unknown config key: {key}")

@@ -1,3 +1,5 @@
+#!/bin/python3
+
 import os
 import random
 import shutil
@@ -120,7 +122,7 @@ try:
     time.sleep(0.5)
     try:
       while True:
-        # only read 10 bytes for testing purposes only, make it bigger eventually
+          # TODO: only read 10 bytes for testing purposes only, make it bigger eventually
         data = os.read(test_pipe, 10)
         oldi = 0
         for i,b in enumerate(data):
@@ -143,6 +145,7 @@ try:
     while incoming_jobs:
       for b in broodlings:
         if b.state == "ready":
+          # TODO: make this a queue, not a stack
           job = incoming_jobs.pop()
           b.activate(*job)
           break

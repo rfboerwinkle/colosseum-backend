@@ -1,5 +1,7 @@
 #!/bin/python3
 
+print("UNTESTED")
+
 import os
 import shutil
 import sys

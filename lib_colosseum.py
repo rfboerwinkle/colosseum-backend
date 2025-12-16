@@ -3,21 +3,35 @@ import shutil
 import subprocess
 import sys
 
+WD = ""
+STORAGE_DIR = ""
+POOL_SIZE = 1
+
 with open("env.cfg", "r") as f:
   for line in f:
     key,val = line.strip("\n\r").split("=", 1)
     if key == "wd":
       WD = val
-    elif key == "pool-size":
+    elif key == "storage_dir":
+      STORAGE_DIR = val
+    elif key == "pool_size":
       POOL_SIZE = int(val)
-    elif key == "www":
+    elif key in ("www", "code_chars", "code_length", "problem_database"):
+      # These are in main.py
       pass
     else:
       print(f"Unknown config key: {key}")
 
+if WD == "":
+  print("'wd' setting not found in 'env.cfg'!")
+  exit(1)
+if STORAGE_DIR == "":
+  print("'storage_dir' setting not found in 'env.cfg'!")
+  exit(1)
+
 IO_TEMPLATE = os.path.join(WD, "io_template.img")
-TMP_DIR = os.path.join(WD, "tmp")
-MAIN_DISK = os.path.join(WD, "creep_disk.img")
+TMP_DIR = os.path.join(STORAGE_DIR, "tmp")
+MAIN_DISK = os.path.join(STORAGE_DIR, "creep_disk.img")
 VM_SETUP_DIR = os.path.join(WD, "vm_setup")
 
 def get_out_dir(suffix):

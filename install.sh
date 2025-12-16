@@ -11,9 +11,6 @@ truncate --size=2097152 $name
 
 mkfifo test_pipe result_pipe
 
-# maybe make this a tmpfs?
-mkdir tmp
-
 echo "wd=$(pwd)" > env.cfg
 
-echo 'Install complete (except for creep_disk.img)'
+echo 'Install complete (except for VM storage)'

@@ -13,7 +13,7 @@ if len(sys.argv) != 2:
   print("Usage: boot_installer.py INSTALL_IMAGE")
   exit()
 
-INSTALL_IMAGE = sys.argv[1]
+INSTALL_IMAGE = os.path.abspath(sys.argv[1])
 SUFFIX = "installer"
 
 lib.clean_tmp(SUFFIX)
@@ -21,7 +21,8 @@ out_dir = lib.get_out_dir(SUFFIX)
 out_file = lib.get_out_file(SUFFIX)
 lib.make_output(SUFFIX)
 lib.mount_output(SUFFIX)
-shutil.copytree(lib.VM_SETUP_DIR, out_dir)
+d = lib.VM_SETUP_DIR
+shutil.copytree(d, os.path.join(out_dir, os.path.basename(d)))
 lib.umount_output(SUFFIX)
 
 dom_xml = xml_gen.installer(lib.MAIN_DISK, out_file, INSTALL_IMAGE)
@@ -49,7 +50,7 @@ finally:
   print()
   print("If you just canceled or quit normally, all is chill.")
   print("If not, after you proceed the error will be printed.")
-  input("Press enter to kill the broodling!")
+  input("Press enter to kill the installer (make sure the machine is powered off)!")
   print()
   domain.undefine()
   conn.close()
