@@ -65,6 +65,8 @@ def poll_result_pipe():
         while True:
           # only read 10 bytes for testing purposes only, make it bigger eventually
           data = os.read(RESULT_PIPE, 10)
+          if not data:
+            break
           oldi = 0
           for i,b in enumerate(data):
             if b == 0:
