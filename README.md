@@ -65,6 +65,8 @@ Run these two commands in seperate terminals:
 
 - `env.cfg`: Contains various settings.
 
+- `problems.db`: Contains the problems.
+
 ## Contributors
 
 [Tobias Bessler](https://github.com/Malizma333)
