@@ -5,3 +5,4 @@
 /problems.db
 
 __pycache__/
+.coverage

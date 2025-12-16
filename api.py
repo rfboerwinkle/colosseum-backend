@@ -65,6 +65,8 @@ def poll_result_pipe():
         while True:
           # only read 10 bytes for testing purposes only, make it bigger eventually
           data = os.read(RESULT_PIPE, 10)
+          if not data:
+            break
           oldi = 0
           for i,b in enumerate(data):
             if b == 0:
@@ -290,7 +292,7 @@ GET_CALLS = {
   ("api", "coding-ctrl-panel"): coding_ctrl_panel,
   # Gets the problem description.
   ("api", "problem"): problem,
-  # Redircts the user to the results page if the party is in "not coding" state
+  # Redirects the user to the results page if the party is in "not coding" state
   ("api", "poll-end"): poll_end,
   # Ends the match and redirects the user if you are the host
   # Returns an error if you are not the host
