@@ -140,7 +140,7 @@ class RequestHandler(server.BaseHTTPRequestHandler):
   # body = str
   # Body will be formatted into html and sent as an error.
   # Also prints the error.
-  def send_error(code, body):
+  def send_error(self, code, body):
     print(f"ERROR {code}: {body}")
     self.send_response(code)
     self.send_header("content-type", "text/html")
